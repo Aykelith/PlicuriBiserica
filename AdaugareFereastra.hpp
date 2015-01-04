@@ -47,7 +47,6 @@ private:
     QPushButton *m_buttonCreaza;
     QPushButton *m_buttonInapoi;
 
-    std::vector<std::pair<QString, QString>> m_membrii;
     bool m_membruGasit;
 
     QString m_data;

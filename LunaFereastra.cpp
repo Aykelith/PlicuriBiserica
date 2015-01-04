@@ -23,6 +23,18 @@ LunaFereastra::LunaFereastra(QString data, QSqlDatabase *db, QWidget *parent)
     m_buttonZiNoua = new QPushButton("Zi noua");
     connect(m_buttonZiNoua, SIGNAL(clicked()), this, SLOT(ziNoua()));
 
+    int lunaDatei = data.left(2).toInt();
+    qDebug() << QDate::currentDate().month() << lunaDatei << data;
+    if (QDate::currentDate().year() > data.right(4).toInt())
+    {
+        if (!(QDate::currentDate().month() == lunaDatei && QDate::currentDate().day() == 1))
+            m_buttonZiNoua->setEnabled(false);
+    }
+    else if (QDate::currentDate().month() > lunaDatei)
+    {
+        m_buttonZiNoua->setEnabled(false);
+    }
+
     m_buttonVizualizare = new QPushButton("Vizualizare");
     connect(m_buttonVizualizare, SIGNAL(clicked()), this, SLOT(vizualizare()));
 

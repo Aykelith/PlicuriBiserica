@@ -32,17 +32,27 @@ SelectareLunaFereastra::SelectareLunaFereastra(QSqlDatabase *db, QWidget *parent
     connect(m_buttonVizualizareLuna, SIGNAL(clicked()), this, SLOT(vizualizareLuna()));
 
     m_buttonVizualizareAn = new QPushButton("Vizualizare an");
+    connect(m_buttonVizualizareAn, SIGNAL(clicked()), this, SLOT(vizualizareAn()));
+
+    m_buttonMembrii = new QPushButton("Membrii");
+    connect(m_buttonMembrii, SIGNAL(clicked()), this, SLOT(vizualizareMembrii()));
+
+    // TODO
+    /**/ m_buttonMembrii->setEnabled(false);
 
     m_buttonIesire = new QPushButton("Iesire");
     connect(m_buttonIesire, SIGNAL(clicked()), this, SLOT(close()));
 
     verificAnNou();
 
+    m_comboBoxAn->setCurrentIndex(m_comboBoxAn->count()-1);
+
     m_layoutPrincipal = new QVBoxLayout();
     m_layoutPrincipal->addWidget(m_comboBoxAn);
     m_layoutPrincipal->addWidget(m_comboBoxLuna);
     m_layoutPrincipal->addWidget(m_buttonVizualizareLuna);
     m_layoutPrincipal->addWidget(m_buttonVizualizareAn);
+    m_layoutPrincipal->addWidget(m_buttonMembrii);
     m_layoutPrincipal->addWidget(m_buttonIesire);
 
     this->setLayout(m_layoutPrincipal);
@@ -56,6 +66,17 @@ void SelectareLunaFereastra::vizualizareLuna()
     m_fereastraLuna = new LunaFereastra(data, m_db);
     m_fereastraLuna->show();
     this->close();
+}
+
+void SelectareLunaFereastra::vizualizareAn()
+{
+    m_fereastraTabel = new TabelFereastra(m_db, m_comboBoxAn->currentText(), false, this);
+    m_fereastraTabel->show();
+}
+
+void SelectareLunaFereastra::vizualizareMembrii()
+{
+
 }
 
 void SelectareLunaFereastra::construiesteLunile(QString anul)

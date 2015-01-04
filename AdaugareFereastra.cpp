@@ -23,14 +23,6 @@ AdaugareFereastra::AdaugareFereastra(QString data, QString inserator, int seria,
 
     m_table = "t" + m_data.right(4);
 
-    QSqlQuery query(*m_db);
-    query.exec("SELECT * FROM Membrii");
-
-    while (query.next())
-    {
-        m_membrii.push_back(std::pair<QString,QString>(query.value("NP").toString(), query.value("Nume").toString()));
-    }
-
     m_lineEditNP = new QLineEdit();
     connect(m_lineEditNP, SIGNAL(editingFinished()), this, SLOT(cautaMembru()));
 
@@ -70,16 +62,18 @@ void AdaugareFereastra::cautaMembru()
 {
     if (m_lineEditNP->text() != "")
     {
-        for (std::size_t i=0; i<m_membrii.size(); ++i)
+        QSqlQuery query(*m_db);
+        query.exec("SELECT Nume FROM Membrii WHERE NP='" + m_lineEditNP->text() + "'");
+
+        if (query.next())
         {
-            if (m_membrii[i].first == m_lineEditNP->text())
-            {
-                m_lineEditNume->setText(m_membrii[i].second);
-                m_membruGasit = true;
-                break;
-            }
+            qDebug() << "NUME:" << query.value("Nume").toString();
+            m_lineEditNume->setText(query.value("Nume").toString());
+            m_membruGasit = true;
+            return;
         }
     }
+    m_lineEditNume->setText("");
     m_membruGasit = false;
 }
 
@@ -95,7 +89,7 @@ void AdaugareFereastra::creaza()
         {
             if (!m_membruGasit)
             {
-
+                query.exec("INSERT INTO Membrii(NP,Nume) VALUES ('" + m_lineEditNP->text() + "','" + m_lineEditNume->text() + "')");
             }
 
             m_lineEditNP->setText("");

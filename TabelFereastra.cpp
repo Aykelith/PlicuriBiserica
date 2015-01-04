@@ -6,6 +6,8 @@ TabelFereastra::TabelFereastra(QSqlDatabase *db, QString data, bool editabil, QW
 , m_data (data)
 , m_cautareInitiala ("")
 , m_restrictionareData (false)
+, m_printat (false)
+, m_editabil (editabil)
 {
     // Incerc sa ma conected la baza de date
     if (!m_db || !m_db->isOpen())
@@ -54,7 +56,7 @@ TabelFereastra::TabelFereastra(QSqlDatabase *db, QString data, bool editabil, QW
     m_comboBoxCauta->addItem("Nume");
     m_comboBoxCauta->addItem("Suma");
     m_comboBoxCauta->addItem("Data");
-    m_comboBoxCauta->addItem("Inserator");
+    m_comboBoxCauta->addItem("Numarator");
 
     m_buttonCauta = new QPushButton("Cauta");
     connect(m_buttonCauta, SIGNAL(clicked()), this, SLOT(cauta()));
@@ -64,9 +66,10 @@ TabelFereastra::TabelFereastra(QSqlDatabase *db, QString data, bool editabil, QW
     m_layoutCauta->addWidget(m_comboBoxCauta);
     m_layoutCauta->addWidget(m_buttonCauta);
 
+    qDebug() << editabil << m_editabil;
     if (editabil)
     {
-        m_labelInserator = new QLabel("Inserator:");
+        m_labelInserator = new QLabel("Numarator:");
         m_lineEditInserator = new QLineEdit();
         connect(m_lineEditInserator, SIGNAL(textChanged(QString)), this, SLOT(verificaInserator(QString)));
 
@@ -110,6 +113,21 @@ TabelFereastra::TabelFereastra(QSqlDatabase *db, QString data, bool editabil, QW
     this->setLayout(m_layoutPrincipal);
 }
 
+void TabelFereastra::closeEvent(QCloseEvent *event)
+{
+    if (m_editabil && !m_printat && m_tabelModel->rowCount() > 0)
+    {
+        int raspuns = QMessageBox::question(this,"Iesire","Sigur doresti sa iesi?");
+
+        if (raspuns == QMessageBox::No)
+        {
+            event->ignore();
+            return;
+        }
+    }
+    event->accept();
+}
+
 void TabelFereastra::adaugare()
 {
     m_fereastraAdaugare = new AdaugareFereastra(m_data, m_lineEditInserator->text(), m_seria, m_db, this);
@@ -119,15 +137,21 @@ void TabelFereastra::adaugare()
 
 void TabelFereastra::printeaza()
 {
+    if (m_tabelModel->rowCount() == 0)
+    {
+        showError("Eroare 100", "Tabelul este gol");
+        return;
+    }
+
     m_data.replace("/", "-");
     std::ofstream file("rapoarte/Raport " + m_data.toStdString() + " " + QString::number(m_seria).toStdString() + ".html");
-    file << "<html><head><style>table, td {border: 1px solid black;	border-collapse: collapse;}</style></head><body>Nume numarator: " << m_lineEditInserator->text().toStdString() << "<br/><table>";
+    file << "<html><head><style>table, td {border: 1px solid black;	border-collapse: collapse;}</style></head><body>Nume numarator: " << m_lineEditInserator->text().toStdString() << "<br/><br/><table>";
 
     int totalLEI = 0;
     int totalEURO = 0;
     int totalDOLARI = 0;
 
-    file << "<tr><td>Nr.</td><td>Nr. plic</td><td>Nume</td><td>Suma</td><td style='width:100px'>Semnatura</td>";
+    file << "<tr><td>Nr.</td><td>Nr. plic</td><td>Nume</td><td>Suma</td><td style='width:150px'>Semnatura</td>";
     for (int i=0; i<m_tabelModel->rowCount(); ++i)
     {
         file << "<tr><td>" << i << "</td>";
@@ -161,6 +185,7 @@ void TabelFereastra::printeaza()
 
     file.close();
 
+    m_printat = true;
     QMessageBox::information(this,"Raport printat","Raportul 'Raport " + m_data + " " + QString::number(m_seria) + ".html' a fost generat.");
 }
 
@@ -168,7 +193,9 @@ void TabelFereastra::cauta()
 {
     if (m_lineEditCauta->text() != "")
     {
-        QString query = " WHERE " + m_comboBoxCauta->currentText() + " LIKE '%" + m_lineEditCauta->text() + "%'";
+        QString searchValue = m_comboBoxCauta->currentText();
+        if (searchValue == "Numarator") searchValue = "Inserator";
+        QString query = " WHERE " + searchValue + " LIKE '%" + m_lineEditCauta->text() + "%'";
         if (m_restrictionareData)
         {
             query += " AND " + m_cautareInitiala.right(m_cautareInitiala.size()-7);
@@ -191,10 +218,52 @@ void TabelFereastra::verificaInserator(QString text)
     m_buttonAdauga->setEnabled(!text.isEmpty());
 }
 
+void TabelFereastra::stergeRand()
+{
+    QPushButton *button = (QPushButton *)sender();
+
+    std::size_t pos;
+    for (std::size_t i=0; i<m_buttonsSterge.size(); ++i)
+    {
+        if (m_buttonsSterge[i] == button)
+        {
+            pos = i;
+            break;
+        }
+    }
+
+    QString ID = m_tabelModel->data(m_tabelModel->index(pos,0)).toString();
+
+    QSqlQuery query(*m_db);
+    query.exec("DELETE FROM " + m_numeTabel + " WHERE ID=" + ID);
+
+    seteazaQuery(m_cautareInitiala);
+}
+
 void TabelFereastra::seteazaQuery(QString queryAditional)
 {
     m_tabelModel->setQuery("SELECT ID,NP,Nume,Suma,Data,Inserator FROM " + m_numeTabel + queryAditional, *m_db);
+    if (m_editabil)
+    {
+        m_tabelModel->insertColumn(m_tabelModel->columnCount());
+        m_tabelModel->setHeaderData(m_tabelModel->columnCount()-1, Qt::Horizontal, "");
+    }
 
     m_tabel->setModel(m_tabelModel);
     m_tabel->hideColumn(0);
+
+    if (m_editabil)
+    {
+        m_buttonsSterge.clear();
+        for (int i=0; i<m_tabelModel->rowCount(); ++i)
+        {
+            m_buttonsSterge.push_back(new QPushButton("Sterge"));
+            m_buttonsSterge[i]->setStyleSheet("padding:0px; font-size:100%;");
+            connect(m_buttonsSterge[i], SIGNAL(released()), this, SLOT(stergeRand()));
+            m_tabel->setIndexWidget(m_tabelModel->index(i,m_tabelModel->columnCount()-1), m_buttonsSterge[i]);
+        }
+    }
+
+    m_tabel->resizeColumnsToContents();
+    this->resize(m_tabel->size().width(), 500);
 }

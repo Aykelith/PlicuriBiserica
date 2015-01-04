@@ -14,6 +14,8 @@
 #include "Useful.hpp"
 #include "Global.hpp"
 
+#include "TabelFereastra.hpp"
+
 class LunaFereastra;
 
 class SelectareLunaFereastra : public QWidget
@@ -25,7 +27,8 @@ public:
 
 private slots:
     void vizualizareLuna();
-    //void vizualizareAn();
+    void vizualizareAn();
+    void vizualizareMembrii();
     void construiesteLunile(QString anul);
 
 private:
@@ -43,9 +46,11 @@ private:
 
     QPushButton *m_buttonVizualizareLuna;
     QPushButton *m_buttonVizualizareAn;
+    QPushButton *m_buttonMembrii;
     QPushButton *m_buttonIesire;
 
     LunaFereastra *m_fereastraLuna;
+    TabelFereastra *m_fereastraTabel;
 };
 
 #endif // SELECTARELUNAFEREASTRA_HPP

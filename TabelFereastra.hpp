@@ -9,11 +9,13 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QTableView>
+#include <QCloseEvent>
 #include <QSqlQueryModel>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 
 #include <fstream>
+#include <vector>
 
 #include "Database.hpp"
 #include "Useful.hpp"
@@ -26,12 +28,16 @@ class TabelFereastra : public QDialog
 public:
     explicit TabelFereastra(QSqlDatabase *db, QString data, bool editabil = false, QWidget *parent = 0);
 
+protected:
+    void closeEvent(QCloseEvent *event);
+
 private slots:
     void adaugare();
     void printeaza();
     void cauta();
     void adaugareTerminata(int result);
     void verificaInserator(QString text);
+    void stergeRand();
 
 private:
     void seteazaQuery(QString queryAditional);
@@ -69,6 +75,11 @@ private:
     QString m_numeTabel;
 
     bool m_restrictionareData;
+
+    std::vector<QPushButton*> m_buttonsSterge;
+
+    bool m_printat;
+    bool m_editabil;
 };
 
 #endif // TABELFEREASTRA_H
